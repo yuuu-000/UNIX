@@ -4,8 +4,7 @@
     <title>unix Time</title>
 </head>
 <body>
-    <div id="UNIXtime">Loading...</div>
-    <div id="offset">offset...</div>
+    <div id="offset"></div>
     <script>
         let timeOffset = 0;
 
@@ -16,10 +15,20 @@
             const serverUnixTime = new Date(data.utc_datetime).getTime();
             const deviceUnixTime = Date.now();
             timeOffset = serverUnixTime - deviceUnixTime; // サーバー時間とデバイス時間の差分
-            document.getElementById("offset").textContent = "サーバーとデバイスの時間誤差" + timeOffset + " ms";
-            correctedTime();
+
+            // 時間差を表示
+            if (serverUnixTime > deviceUnixTime) {
+                document.getElementById("offset").textContent = "デバイス時間はサーバー時間より " + timeOffset + " ms 遅れています";
+            } else if (serverUnixTime < deviceUnixTime) {
+                document.getElementById("offset").textContent = "デバイス時間はサーバー時間より " + Math.abs(timeOffset) + " ms 進んでいます"; // 絶対値を取る
+            } else {
+                document.getElementById("offset").textContent = "デバイス時間とサーバー時間の差は " + timeOffset + " ms です";
+            }
+
+            correctedTime(); 
         });
 
+        // 時刻を更新する関数
         function correctedTime() {
             const now = Date.now(); // デバイスの現在時刻
             const syncedUnixTime = now + timeOffset; // オフセットで補正した時刻
