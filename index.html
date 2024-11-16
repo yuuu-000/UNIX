@@ -6,16 +6,15 @@
 <body>
     <div id="UNIXtime"></div>
     <script>
-        fetch("https://worldtimeapi.org/api/timezone/Etc/UTC")
-        .then(response => response.json())
-        .then(data => {
-            const unixTime = new Date(data.utc_datetime).getTime();
-
-            function UTCunix() {
-                document.getElementById("UNIXtime").textContent = unixTime; 
-            }
-            setInterval(UTCunix, 0);
+       function UTCunix() {
+           fetch("https://worldtimeapi.org/api/timezone/Etc/UTC")
+           .then(response => response.json())
+           .then(data => {
+               const unixTime = new Date(data.utc_datetime).getTime();          
+               document.getElementById("UNIXtime").textContent = unixTime; 
+            }            
         });
+        setInterval(UTCunix, 1000);      
     </script>
 </body>
 </html>
