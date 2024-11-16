@@ -13,9 +13,8 @@
 
             function UTCunix() {
                 document.getElementById("UNIXtime").textContent = unixTime; 
-                requestAnimationFrame(UTCunix);
             }
-            UTCunix();
+            setInterval(UTCunix, 0);
         });
     </script>
 </body>
