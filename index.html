@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>unix Time</title>
+</head>
+<body>
+    <div id="UNIXtime"></div>
+    <script>
+        fetch("https://worldtimeapi.org/api/timezone/Etc/UTC")
+        .then(response => response.json())
+        .then(data => {
+            const unixTime = new Date(data.utc_datetime).getTime();
+
+            function UTCunix() {
+                document.getElementById("UNIXtime").textContent = unixTime; 
+                requestAnimationFrame(UTCunix);
+            }
+            UTCunix();
+        });
+    </script>
+</body>
+</html>
