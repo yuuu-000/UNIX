@@ -4,13 +4,28 @@
     <title>unix Time</title>
 </head>
 <body>
-    <div id="UNIXtime"></div>
+    <div id="UNIXtime">Loading...</div>
+    <div id="offset">offset...</div>
     <script>
-       function UTC() {
-           const unixTime = Date.now();      
-           document.getElementById("UNIXtime").textContent = unixTime;           
+        let timeOffset = 0;
+
+        // サーバー時刻を取得してオフセットを計算
+        fetch("https://worldtimeapi.org/api/timezone/Etc/UTC")
+        .then(response => response.json())
+        .then(data => {
+            const serverUnixTime = new Date(data.utc_datetime).getTime();
+            const deviceUnixTime = Date.now();
+            timeOffset = serverUnixTime - deviceUnixTime; // サーバー時間とデバイス時間の差分
+            document.getElementById("offset").textContent = "サーバーとデバイスの時間誤差" + timeOffset + " ms";
+            correctedTime();
+        });
+
+        function correctedTime() {
+            const now = Date.now(); // デバイスの現在時刻
+            const syncedUnixTime = now + timeOffset; // オフセットで補正した時刻
+            document.getElementById("UNIXtime").textContent = syncedUnixTime;
+            requestAnimationFrame(correctedTime);
         }
-        setInterval(UTC, 0);   
     </script>
 </body>
 </html>
