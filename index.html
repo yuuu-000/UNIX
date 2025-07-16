@@ -47,10 +47,10 @@
 
          const syncedDate = new Date(syncedUnixTime);
          const A = `${syncedDate.getFullYear()}-${("0" + (syncedDate.getMonth() + 1)).slice(-2)}-${("0" + syncedDate.getDate()).slice(-2)} `;
-         const B = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][syncedDate.getDay()];
+         const B = ["日", "月", "火", "水", "木", "金", "土"][syncedDate.getDay()];
          const C = ` ${("0" + syncedDate.getHours()).slice(-2)}:${("0" + syncedDate.getMinutes()).slice(-2)}:${("0" + syncedDate.getSeconds()).slice(-2)}.${("00" + syncedDate.getMilliseconds()).slice(-3)}`;
 
-         document.getElementById("time").textContent = "修正時刻: " + A + B + C;
+         document.getElementById("time").textContent = "修正時刻: " + A + "(" + B + ")" + C;
          document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
 
          requestAnimationFrame(correctedTime);
