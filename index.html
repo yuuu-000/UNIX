@@ -28,7 +28,7 @@
             console.log("サーバー2: " + timeOffset2 + " ms")
 
             // オフセットの平均を計算
-            averageOffset = (timeOffset1 + timeOffset2) / 2;
+            averageOffset = Math.ceil((timeOffset1 + timeOffset2) / 2);
 
             if (averageOffset > 0) {
                document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + averageOffset + " ms 遅れています";
