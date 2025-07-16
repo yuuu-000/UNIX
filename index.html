@@ -1,41 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>unix Time</title>
+   <title>unix time</title>
 </head>
 <body>
-    <div id="UNIXtime">Loading...</div>  
-    <div id="offset">Loading...</div>
-    <script>
-        let timeOffset = 0;
-
-        // サーバー時刻を取得してオフセットを計算
-        fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json")
-        .then(response => response.json())
-        .then(data => {
-            const serverUnixTime = data.st * 1000;
+   <div id="offset">Loading...</div>
+   <br>
+   <div id="time">Loading...</div>
+   <div id="UNIXtime">Loading...</div>
+   <script>
+      let averageOffset;
+      Promise.all([
+         fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
+         fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
+      ])
+         .then(responses => Promise.all(responses.map(response => response.json())))
+         .then(data => {
+            // サーバー1とサーバー2のUnix時刻を取得
+            const serverUnixTime1 = data[0].st * 1000;
+            const serverUnixTime2 = data[1].st * 1000;
             const deviceUnixTime = Date.now();
-            timeOffset = serverUnixTime - deviceUnixTime; // サーバー時間とデバイス時間の差分
 
-            // 時間差を表示
-            if (serverUnixTime > deviceUnixTime) {
-                document.getElementById("offset").textContent = "デバイス時間はサーバー時間より " + timeOffset + " ms 遅れています";
-            } else if (serverUnixTime < deviceUnixTime) {
-                document.getElementById("offset").textContent = "デバイス時間はサーバー時間より " + Math.abs(timeOffset) + " ms 進んでいます"; // 絶対値を取る
+            // 両方のサーバーの時刻オフセットを計算
+            const timeOffset1 = serverUnixTime1 - deviceUnixTime;
+            const timeOffset2 = serverUnixTime2 - deviceUnixTime;
+            console.log("サーバー1: " + timeOffset1 + " ms")
+            console.log("サーバー2: " + timeOffset2 + " ms")
+
+            // オフセットの平均を計算
+            averageOffset = (timeOffset1 + timeOffset2) / 2;
+
+            if (averageOffset > 0) {
+               document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + averageOffset + " ms 遅れています";
+            } else if (averageOffset < 0) {
+               document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + Math.abs(averageOffset) + " ms 進んでいます"; // 絶対値を取る
             } else {
-                document.getElementById("offset").textContent = "デバイス時間とサーバー時間の差は " + timeOffset + " ms です";
+               document.getElementById("offset").textContent = "デバイス時刻とサーバー時刻の差は " + averageOffset + " ms です";
             }
 
-            correctedTime(); 
-        });
+            correctedTime();
+         });
 
-        // 時刻を更新する関数
-        function correctedTime() {
-            const now = Date.now(); // デバイスの現在時刻
-            const syncedUnixTime = now + timeOffset; // オフセットで補正した時刻
-            document.getElementById("UNIXtime").textContent = syncedUnixTime;
-            requestAnimationFrame(correctedTime);
-        }
-    </script>
+      function correctedTime() {
+         // オフセットで補正した時刻
+         const syncedUnixTime = Date.now() + averageOffset;
+
+         const syncedDate = new Date(syncedUnixTime);
+         const A = `${syncedDate.getFullYear()}-${("0" + (syncedDate.getMonth() + 1)).slice(-2)}-${("0" + syncedDate.getDate()).slice(-2)} `;
+         const B = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][syncedDate.getDay()];
+         const C = ` ${("0" + syncedDate.getHours()).slice(-2)}:${("0" + syncedDate.getMinutes()).slice(-2)}:${("0" + syncedDate.getSeconds()).slice(-2)}.${("00" + syncedDate.getMilliseconds()).slice(-3)}`;
+
+         document.getElementById("time").textContent = "修正時刻: " + A + B + C;
+         document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
+
+         requestAnimationFrame(correctedTime);
+      }
+   </script>
 </body>
 </html>
