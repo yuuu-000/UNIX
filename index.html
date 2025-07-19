@@ -9,37 +9,45 @@
    <div id="time">Loading...</div>
    <div id="UNIXtime">Loading...</div>
    <script>
-      let averageOffset;
-      Promise.all([
-         fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
-         fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
-      ])
-         .then(responses => Promise.all(responses.map(response => response.json())))
-         .then(data => {
-            // サーバー1とサーバー2のUnix時刻を取得
-            const serverUnixTime1 = data[0].st * 1000;
-            const serverUnixTime2 = data[1].st * 1000;
-            const deviceUnixTime = Date.now();
+   let averageOffset;
 
-            // 両方のサーバーの時刻オフセットを計算
-            const timeOffset1 = serverUnixTime1 - deviceUnixTime;
-            const timeOffset2 = serverUnixTime2 - deviceUnixTime;
-            console.log("サーバー1: " + timeOffset1 + " ms")
-            console.log("サーバー2: " + timeOffset2 + " ms")
+   const t0 = Date.now(); // fetch直前と直後の端末時刻を記録して補正に使う
+   Promise.all([
+      fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
+      fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
+   ])
+      .then(responses => {
+         const t1 = Date.now(); // fetchのレスポンスを受け取った時刻
+         return Promise.all(responses.map(response => response.json()))
+            .then(data => ({ data, t0, t1 }));
+      })
+      .then(({ data, t0, t1 }) => {
+         const deviceUnixTime = Date.now();
+         // サーバー1とサーバー2のUnix時刻を取得
+         const serverUnixTime1 = data[0].st * 1000;
+         const serverUnixTime2 = data[1].st * 1000;
 
-            // オフセットの平均を計算
-            averageOffset = Math.ceil((timeOffset1 + timeOffset2) / 2);
+         // 両方のサーバーの時刻オフセットを計算
+         const timeOffset1 = serverUnixTime1 - deviceUnixTime;
+         const timeOffset2 = serverUnixTime2 - deviceUnixTime;
+         const latency = t1 - t0
+         const latencOneWay = (t1 - t0) / 2
 
-            if (averageOffset > 0) {
-               document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + averageOffset + " ms 遅れています";
-            } else if (averageOffset < 0) {
-               document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + Math.abs(averageOffset) + " ms 進んでいます"; // 絶対値を取る
-            } else {
-               document.getElementById("offset").textContent = "デバイス時刻とサーバー時刻の差は " + averageOffset + " ms です";
-            }
+         console.log("fetch往復レイテンシ: " + latency + " ms\nfetch片道レイテンシ: " + latencOneWay + " ms\nサーバー1との差: " + timeOffset1 + " ms\nサーバー2との差: " + timeOffset2 + " ms");
 
-            correctedTime();
-         });
+         // オフセットの平均を計算
+         averageOffset = Math.ceil(latencOneWay + ((timeOffset1 + timeOffset2) / 2));
+
+         if (averageOffset > 0) {
+            document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + averageOffset + " ms 遅れています";
+         } else if (averageOffset < 0) {
+            document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + Math.abs(averageOffset) + " ms 進んでいます";
+         } else {
+            document.getElementById("offset").textContent = "デバイス時刻とサーバー時刻の差は " + averageOffset + " ms です";
+         }
+
+         correctedTime();
+      });
 
       function correctedTime() {
          // オフセットで補正した時刻
