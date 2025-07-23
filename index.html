@@ -39,9 +39,9 @@
          averageOffset = Math.ceil(latencOneWay + ((timeOffset1 + timeOffset2) / 2));
 
          if (averageOffset > 0) {
-            document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + averageOffset + " ms 遅れています";
+            document.getElementById("offset").textContent = "デバイスの時刻は " + averageOffset + " ms 遅れています";
          } else if (averageOffset < 0) {
-            document.getElementById("offset").textContent = "デバイス時刻はサーバー時刻より " + Math.abs(averageOffset) + " ms 進んでいます";
+            document.getElementById("offset").textContent = "デバイスの時刻は " + Math.abs(averageOffset) + " ms 進んでいます";
          } else {
             document.getElementById("offset").textContent = "デバイス時刻とサーバー時刻の差は " + averageOffset + " ms です";
          }
