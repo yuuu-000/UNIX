@@ -22,16 +22,14 @@
             .then(data => ({ data, t0, t1 }));
       })
       .then(({ data, t0, t1 }) => {
-         const deviceUnixTime = Date.now();
-         // サーバー1とサーバー2のUnix時刻を取得
          const serverUnixTime1 = data[0].st * 1000;
          const serverUnixTime2 = data[1].st * 1000;
 
          // 両方のサーバーの時刻オフセットを計算
-         const timeOffset1 = serverUnixTime1 - deviceUnixTime;
-         const timeOffset2 = serverUnixTime2 - deviceUnixTime;
+         const timeOffset1 = serverUnixTime1 - t1;
+         const timeOffset2 = serverUnixTime2 - t1;
          const latency = t1 - t0
-         const latencOneWay = (t1 - t0) / 2
+         const latencOneWay = latency / 2
 
          console.log("fetch往復レイテンシ: " + latency + " ms\nfetch片道レイテンシ: " + latencOneWay + " ms\nサーバー1との差: " + timeOffset1 + " ms\nサーバー2との差: " + timeOffset2 + " ms");
 
