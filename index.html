@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>unix time</title>
 </head>
 <body>
@@ -9,58 +11,68 @@
    <div id="time">Loading...</div>
    <div id="UNIXtime">Loading...</div>
    <script>
-   let averageOffset;
+      let averageOffset;
 
-   const t0 = Date.now(); // fetch直前と直後の端末時刻を記録して補正に使う
-   Promise.all([
-      fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
-      fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
-   ])
-   .then(responses => {
-      const t1 = Date.now(); // fetchのレスポンスを受け取った時刻
-      return Promise.all(responses.map(response => response.json()))
-         .then(data => ({ data, t0, t1 }));
-   })
-   .then(({ data, t0, t1 }) => {
-      const serverUnixTime1 = data[0].st * 1000;
-      const serverUnixTime2 = data[1].st * 1000;
+      const t0 = Date.now(); // fetch直前と直後の端末時刻を記録して補正に使う
+      Promise.all([
+         fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
+         fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
+      ])
+      .then(responses => {
+         const t1 = Date.now(); // fetchのレスポンスを受け取った時刻
+         return Promise.all(responses.map(response => response.json()))
+            .then(data => ({ data, t0, t1 }));
+      })
+      .then(({ data, t0, t1 }) => {
+         const serverUnixTime1 = data[0].st * 1000;
+         const serverUnixTime2 = data[1].st * 1000;
 
-      // 両方のサーバーの時刻オフセットを計算
-      const timeOffset1 = serverUnixTime1 - t1;
-      const timeOffset2 = serverUnixTime2 - t1;
-      const latency = t1 - t0
-      const latencOneWay = latency / 2
+         const timeOffset1 = serverUnixTime1 - t1;
+         const timeOffset2 = serverUnixTime2 - t1;
 
-      console.log("fetch往復レイテンシ: " + latency + " ms\nfetch片道レイテンシ: " + latencOneWay + " ms\nサーバー1との差: " + timeOffset1 + " ms\nサーバー2との差: " + timeOffset2 + " ms");
+         const latency = t1 - t0;
+         const latencOneWay = latency / 2;
 
-      // オフセットの平均を計算
-      averageOffset = Math.ceil(latencOneWay + ((timeOffset1 + timeOffset2) / 2));
+         console.log(
+            "fetch往復レイテンシ: " + latency + " ms\n" +
+            "fetch片道レイテンシ: " + latencOneWay + " ms\n" +
+            "サーバー1との差: " + timeOffset1 + " ms\n" +
+            "サーバー2との差: " + timeOffset2 + " ms"
+         );
 
-      if (averageOffset > 0) {
-         document.getElementById("offset").textContent = "デバイスの時刻は " + averageOffset + " ms 遅れています";
-      } else if (averageOffset < 0) {
-         document.getElementById("offset").textContent = "デバイスの時刻は " + Math.abs(averageOffset) + " ms 進んでいます";
-      } else {
-         document.getElementById("offset").textContent = "デバイス時刻とサーバー時刻の差は " + averageOffset + " ms です";
+         averageOffset = Math.ceil(latencOneWay + ((timeOffset1 + timeOffset2) / 2));
+
+         const offset = document.getElementById("offset");
+         const ms = Math.abs(averageOffset);
+         const s = (ms / 1000).toFixed(3);
+         let text;
+
+         if (averageOffset > 0) {
+             text = "あなたのデバイスの時刻は " + s + " s (" + ms + " ms) 遅れています";
+         } else if (averageOffset < 0) {
+             text = "あなたのデバイスの時刻は " + s + " s (" + ms + " ms) 進んでいます";
+         } else {
+             text = "あなたのデバイス時刻はずれていません。 (0 s)";
+         }
+
+         offset.textContent = text;
+         correctedTime();
+      });
+
+      function correctedTime() {
+         // オフセットで補正した時刻
+         const syncedUnixTime = Date.now() + averageOffset;
+
+         const syncedDate = new Date(syncedUnixTime);
+         const A = "${syncedDate.getFullYear()}-${("0" + (syncedDate.getMonth() + 1)).slice(-2)}-${("0" + syncedDate.getDate()).slice(-2)} ";
+         const B = ["日", "月", "火", "水", "木", "金", "土"][syncedDate.getDay()];
+         const C = " ${("0" + syncedDate.getHours()).slice(-2)}:${("0" + syncedDate.getMinutes()).slice(-2)}:${("0" + syncedDate.getSeconds()).slice(-2)}.${("00" + syncedDate.getMilliseconds()).slice(-3)}";
+
+         document.getElementById("time").textContent = "修正時刻: " + A + "(" + B + ")" + C;
+         document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
+
+         requestAnimationFrame(correctedTime);
       }
-
-      correctedTime();
-   });
-
-   function correctedTime() {
-      // オフセットで補正した時刻
-      const syncedUnixTime = Date.now() + averageOffset;
-
-      const syncedDate = new Date(syncedUnixTime);
-      const A = `${syncedDate.getFullYear()}-${("0" + (syncedDate.getMonth() + 1)).slice(-2)}-${("0" + syncedDate.getDate()).slice(-2)} `;
-      const B = ["日", "月", "火", "水", "木", "金", "土"][syncedDate.getDay()];
-      const C = ` ${("0" + syncedDate.getHours()).slice(-2)}:${("0" + syncedDate.getMinutes()).slice(-2)}:${("0" + syncedDate.getSeconds()).slice(-2)}.${("00" + syncedDate.getMilliseconds()).slice(-3)}`;
-
-      document.getElementById("time").textContent = "修正時刻: " + A + "(" + B + ")" + C;
-      document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
-
-      requestAnimationFrame(correctedTime);
-   }
    </script>
 </body>
 </html>
