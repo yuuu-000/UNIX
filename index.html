@@ -13,13 +13,13 @@
    <script>
       let averageOffset;
 
-      const t0 = Date.now(); // fetch直前と直後の端末時刻を記録して補正に使う
+      const t0 = Date.now();
       Promise.all([
          fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
          fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
       ])
       .then(responses => {
-         const t1 = Date.now(); // fetchのレスポンスを受け取った時刻
+         const t1 = Date.now();
          return Promise.all(responses.map(response => response.json()))
             .then(data => ({ data, t0, t1 }));
       })
@@ -60,13 +60,18 @@
       });
 
       function correctedTime() {
-         // オフセットで補正した時刻
          const syncedUnixTime = Date.now() + averageOffset;
-
          const syncedDate = new Date(syncedUnixTime);
-         const A = "${syncedDate.getFullYear()}-${("0" + (syncedDate.getMonth() + 1)).slice(-2)}-${("0" + syncedDate.getDate()).slice(-2)} ";
+
+         const A = syncedDate.getFullYear() + "-" +
+                   ("0" + (syncedDate.getMonth() + 1)).slice(-2) + "-" +
+                   ("0" + syncedDate.getDate()).slice(-2) + " ";
          const B = ["日", "月", "火", "水", "木", "金", "土"][syncedDate.getDay()];
-         const C = " ${("0" + syncedDate.getHours()).slice(-2)}:${("0" + syncedDate.getMinutes()).slice(-2)}:${("0" + syncedDate.getSeconds()).slice(-2)}.${("00" + syncedDate.getMilliseconds()).slice(-3)}";
+         const C = " " +
+                   ("0" + syncedDate.getHours()).slice(-2) + ":" +
+                   ("0" + syncedDate.getMinutes()).slice(-2) + ":" +
+                   ("0" + syncedDate.getSeconds()).slice(-2) + "." +
+                   ("00" + syncedDate.getMilliseconds()).slice(-3);
 
          document.getElementById("time").textContent = "修正時刻: " + A + "(" + B + ")" + C;
          document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
