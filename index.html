@@ -4,6 +4,33 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>unix time</title>
+   <style>
+      body {
+         -webkit-tap-highlight-color: transparent;
+         padding: 10px;
+         margin: 0;
+         background-color: #151617;
+         color: #eee;
+         font-family: "Noto Sans JP";
+         font-size: 14px;
+         font-weight: 200;
+      }
+
+      ::selection {
+         background-color: transparent;
+         color: #fd5;
+      }
+
+      @font-face {
+      font-family: "Noto Sans JP";
+      font-style: normal;
+      font-weight: 200;
+      font-display: swap;
+      src:
+         local("Noto Sans JP"),
+         local("NotoSansJP-Regular"),
+      }
+   </style>
 </head>
 <body>
    <div id="offset">Loading...</div>
@@ -44,15 +71,15 @@
 
          const offset = document.getElementById("offset");
          const ms = Math.abs(averageOffset);
-         const s = (ms / 1000).toFixed(3);
-         let text;
+         const s = (ms / 1000).toFixed(2);
+         let text =  "あなたのデバイスの時刻は "
 
          if (averageOffset > 0) {
-             text = "あなたのデバイスの時刻は " + s + " s (" + ms + " ms) 遅れています";
+             text += s + "秒 (" + ms + " ms) 遅れています";
          } else if (averageOffset < 0) {
-             text = "あなたのデバイスの時刻は " + s + " s (" + ms + " ms) 進んでいます";
+             text += s + "秒 (" + ms + " ms) 進んでいます";
          } else {
-             text = "あなたのデバイス時刻はずれていません。 (0 s)";
+             text *= "ずれていません (0秒)";
          }
 
          offset.textContent = text;
