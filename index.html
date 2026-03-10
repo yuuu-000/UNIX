@@ -3,7 +3,7 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>unix time</title>
+   <title>正確じかん</title>
    <style>
       body {
          -webkit-tap-highlight-color: transparent;
@@ -22,13 +22,13 @@
       }
 
       @font-face {
-      font-family: "Noto Sans JP";
-      font-style: normal;
-      font-weight: 200;
-      font-display: swap;
-      src:
-         local("Noto Sans JP"),
-         local("NotoSansJP-Regular"),
+         font-family: "Noto Sans JP";
+         font-style: normal;
+         font-weight: 200;
+         font-display: swap;
+         src:
+            local("Noto Sans JP"),
+            local("NotoSansJP-Regular"),
       }
    </style>
 </head>
@@ -37,68 +37,66 @@
    <br>
    <div id="time">Loading...</div>
    <div id="UNIXtime">Loading...</div>
-   <script>
+
+   <script type="text/javascript">
       let averageOffset;
-
-      const t0 = Date.now();
-      Promise.all([
-         fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json"),
-         fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json")
+      Promise.all([// fetch が並列なので各レスポンスの個別遅延が無視され一番遅いレスポンスを待つ
+         fetch("https://3fe5a5f690efc790d4764f1c528a4ebb89fa4168.nict.go.jp/cgi-bin/json" + "?" + Date.now() / 1000),
+         fetch("https://67495dde3b39c2991829589f0101ab7a035eecf5.nict.go.jp/cgi-bin/json" + "?" + Date.now() / 1000),
+         fetch("https://08a08e3a6edef4ba7a0c055a42d8e1ba2597f2b5.nict.go.jp/cgi-bin/json" + "?" + Date.now() / 1000)
       ])
-      .then(responses => {
-         const t1 = Date.now();
-         return Promise.all(responses.map(response => response.json()))
-            .then(data => ({ data, t0, t1 }));
-      })
-      .then(({ data, t0, t1 }) => {
-         const serverUnixTime1 = data[0].st * 1000;
-         const serverUnixTime2 = data[1].st * 1000;
+         .then(responses => {
+            const t1 = Date.now();
+            return Promise.all(responses.map(r => r.json()))
+               .then(data => [data, t1]);
+         })
+         .then(([data, t1]) => {
+            const timeOffset1 = (data[0].st - data[0].it) * 1000;
+            const timeOffset2 = (data[1].st - data[1].it) * 1000;
+            const timeOffset3 = (data[2].st - data[2].it) * 1000;
+            const latency = (t1 - (((data[0].it + data[1].it + data[2].it ) * 1000) / 3));
+            const latencOneWay = latency / 2; // 本当は相手サーバーからクライアントに届くまでの時間を足したいが仕方ないのでuplink, downlinkが同じだと仮定して片道レイテンシ
 
-         const timeOffset1 = serverUnixTime1 - t1;
-         const timeOffset2 = serverUnixTime2 - t1;
+            console.log(
+               "fetch letancy: " + latency + " ms\n" +
+               "oneway letancy: " + latencOneWay + " ms\n" +
+               "offset server1: " + timeOffset1 + " ms\n" +
+               "offset server2: " + timeOffset2 + " ms\n" +
+               "offset server3: " + timeOffset3 + " ms"
+            );
 
-         const latency = t1 - t0;
-         const latencOneWay = latency / 2;
+            averageOffset = +(((timeOffset1 + timeOffset2 + timeOffset3) / 3) - latencOneWay).toFixed(1);
 
-         console.log(
-            "fetch往復レイテンシ: " + latency + " ms\n" +
-            "fetch片道レイテンシ: " + latencOneWay + " ms\n" +
-            "サーバー1との差: " + timeOffset1 + " ms\n" +
-            "サーバー2との差: " + timeOffset2 + " ms"
-         );
+            const offset = document.getElementById("offset");
+            const ms = Math.abs(averageOffset);
+            const s = (ms / 1000).toFixed(2);
+            let text = "あなたのデバイスの時刻は ";
 
-         averageOffset = Math.ceil(latencOneWay + ((timeOffset1 + timeOffset2) / 2));
+            if (averageOffset > 0) {
+               text += s + "秒 (" + ms + " ms) 遅れています";
+            } else if (averageOffset < 0) {
+               text += s + "秒 (" + ms + " ms) 進んでいます";
+            } else {
+               text += "ずれていません (0秒)";
+            }
 
-         const offset = document.getElementById("offset");
-         const ms = Math.abs(averageOffset);
-         const s = (ms / 1000).toFixed(2);
-         let text =  "あなたのデバイスの時刻は "
-
-         if (averageOffset > 0) {
-             text += s + "秒 (" + ms + " ms) 遅れています";
-         } else if (averageOffset < 0) {
-             text += s + "秒 (" + ms + " ms) 進んでいます";
-         } else {
-             text += "ずれていません (0秒)";
-         }
-
-         offset.textContent = text;
-         correctedTime();
-      });
+            offset.textContent = text;
+            correctedTime();
+         });
 
       function correctedTime() {
          const syncedUnixTime = Date.now() + averageOffset;
          const syncedDate = new Date(syncedUnixTime);
 
          const A = syncedDate.getFullYear() + "-" +
-                   ("0" + (syncedDate.getMonth() + 1)).slice(-2) + "-" +
-                   ("0" + syncedDate.getDate()).slice(-2) + " ";
+            ("0" + (syncedDate.getMonth() + 1)).slice(-2) + "-" +
+            ("0" + syncedDate.getDate()).slice(-2) + " ";
          const B = ["日", "月", "火", "水", "木", "金", "土"][syncedDate.getDay()];
          const C = " " +
-                   ("0" + syncedDate.getHours()).slice(-2) + ":" +
-                   ("0" + syncedDate.getMinutes()).slice(-2) + ":" +
-                   ("0" + syncedDate.getSeconds()).slice(-2) + "." +
-                   ("00" + syncedDate.getMilliseconds()).slice(-3);
+            ("0" + syncedDate.getHours()).slice(-2) + ":" +
+            ("0" + syncedDate.getMinutes()).slice(-2) + ":" +
+            ("0" + syncedDate.getSeconds()).slice(-2) + "." +
+            ("00" + syncedDate.getMilliseconds()).slice(-3);
 
          document.getElementById("time").textContent = "修正時刻: " + A + "(" + B + ")" + C;
          document.getElementById("UNIXtime").textContent = "修正UNIX時間: " + syncedUnixTime;
